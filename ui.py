@@ -1,1 +1,1 @@
-prompt=input("Hello, I am your personal study assisstant.\n How can I help you today??\n")
+prompt=input("Hello, I am your personal study assisstant.\nHow can I help you today??\n").lower()

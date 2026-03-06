@@ -3,7 +3,8 @@ from config import Model,API_key,Temperature
 from ui import prompt
 import requests
 
-def Assistant_response():
+def Assistant_response(input):
+    print("yes4")
     client = Groq(
         api_key=API_key
     )
@@ -19,17 +20,19 @@ def Assistant_response():
             },
             {
                 "role":"user",
-                "content":prompt
+                "content":input
             }
         ],
         model=Model,
-        temperature=Temperature
+        temperature=Temperature,
+        max_tokens=500
     )
     print(chat_completion.choices[0].message.content)
 
 class Wiki:
     def Topic_Extraction(self):
         self.prom=prompt
+        print("yes1")
         client = Groq(
             api_key=API_key
         )
@@ -51,6 +54,7 @@ class Wiki:
         self.extracted_output=(chat_completion.choices[0].message.content)
 
     def Summary(self):
+        print("yes2")
         topic=self.extracted_output.replace(" ","_")
         address=f"https://en.wikipedia.org/api/rest_v1/page/summary{topic}"
         
@@ -62,10 +66,42 @@ class Wiki:
             self.add_info=["No additional information available"]
     
     def finishing_touches(self):
-        final_prompt=self.prom + self.add_info
-
+        print("yes3")
+        self.info=self.add_info[0]
+        final_prompt=self.prom + str(self.info)
+        return final_prompt
+    
 class Trivia:
-    def
-
-
-
+    def Conditon_Extraction(self):
+        self.prom_triv=prompt
+        self.triv=self.prom_triv + '''"{id":9,"name":"General Knowledge"},{"id":10,"name":"Entertainment: Books"},{"id":11,"name":"Entertainment: Film"},{"id":12,"name":"Entertainment: Music"},{"id":13,"name":"Entertainment: Musicals & Theatres"},{"id":14,"name":"Entertainment: Television"},{"id":15,"name":"Entertainment: Video Games"},{"id":16,"name":"Entertainment: Board Games"},{"id":17,"name":"Science & Nature"},{"id":18,"name":"Science: Computers"},{"id":19,"name":"Science: Mathematics"},{"id":20,"name":"Mythology"},{"id":21,"name":"Sports"},{"id":22,"name":"Geography"},{"id":23,"name":"History"},{"id":24,"name":"Politics"},{"id":25,"name":"Art"},{"id":26,"name":"Celebrities"},{"id":27,"name":"Animals"},{"id":28,"name":"Vehicles"},{"id":29,"name":"Entertainment: Comics"},{"id":30,"name":"Science: Gadgets"},{"id":31,"name":"Entertainment: Japanese Anime & Manga"},{"id":32,"name":"Entertainment: Cartoon & Animations"}'''
+        print("yesT1")
+        client = Groq(
+            api_key=API_key
+        )
+        extraction="you are a tool that is used to enter the number of question, difficulty of the question, and the category those questions belong to for a quiz or test.\n" \
+                   "extract the number of questions, their category and their difficulty from the given prompt.\n" \
+                   "use the given data to identify the id of the given category and respond using the specific id as answer.\n" \
+                   "the difficuly can be easy, medium or hard.\n" \
+                   "if no number of questions is provided, chose a random no between 1 and 49 and chose the medium difficulty with general knowledge category id." \
+                   "Whatever difficulty the user ask, you have to convert them into one of the three given difficulties,i.e., easy, medium, hard" \
+                   "you have to evaluate the given prompt deeply and assess the correct categorey, the catergories in the prompts can even be abbreviations" \
+                   "response should be in the form of a python dictionary, where the keys should be number, difficulty, category_id" \
+                   "Nothing else should be provided in response" \
+                   "the response should strictly restrict to the python dictionary only"
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content":extraction
+                },
+                {
+                    "role":"user",
+                    "content":self.triv
+                }
+            ],
+            model=Model,
+            temperature=Temperature
+        )
+        self.extracted_output=(chat_completion.choices[0].message.content)
+        print(self.extracted_output)
