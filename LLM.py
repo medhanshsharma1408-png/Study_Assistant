@@ -127,3 +127,47 @@ class Trivia:
         print("yesT3")
         final_prompt=self.prom_triv + str(self.add_info)
         return final_prompt
+    
+class Dict:
+    def Def_Extraction(self):
+        self.prom_def=prompt
+        print("yesD1")
+        client = Groq(
+            api_key=API_key
+        )
+        extraction="you are an extraction tool that is used to extract key topics from a given prompt. \
+                     Extact the main topic from the given prompt and display it. \
+                    Respond with only the extracted element, nothing else except the main topic should be displayed in the response."
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content":extraction
+                },
+                {
+                    "role":"user",
+                    "content":prompt
+                }
+            ],
+            model=Model,
+            temperature=Temperature
+        )
+        self.extracted_output=(chat_completion.choices[0].message.content)
+
+    def Def(self):
+        print("yesD2")
+        topic=self.extracted_output.replace(" ","_")
+        address=f"https://api.dictionaryapi.dev/api/v2/entries/en/{topic}"
+        
+        response=requests.get(url=address)
+        if response.status_code == 200:
+            data=response.json()
+            self.add_info=data[0]["meanings"]
+        else:
+            self.add_info=["No additional information available"]
+
+    def Dict_finish(self):
+        print("yesD3")
+        self.info=self.add_info
+        final_prompt=self.prom_def + str(self.info)
+        return final_prompt
