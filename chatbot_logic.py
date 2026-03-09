@@ -20,4 +20,4 @@ elif any(word in prompt for word in ["define","clarify","state"]):
     p=d.Dict_finish()
     Assistant_response(input=p)
 else:
-    print("not possible")
+    Assistant_response(input=prompt)

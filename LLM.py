@@ -3,38 +3,53 @@ from config import Model,API_key,Temperature
 from ui import prompt
 import json
 import requests
+import logging
+
+logging.basicConfig(
+    filename="assistant.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 def Assistant_response(input):
-    print("yes4")
-    client = Groq(
-        api_key=API_key
-    )
-    system_prompt="You are an advanced study assistant that tutors and helps the user with different topics and tasks through assessing the given prompt and the additional information provided in the prompt.\n" \
-                   "read the prompt and given information carefully and follow the given tasks faithfully according to the given prompts.\n" \
-                   "if there is no information, then search the web and fulfill the given task.\n" \
-                   "Your response should be catered towards providing a positive response for the user as a caring and smart teacher or assistant.\n" \
-                   "respond in a soft yet firm manner befiting the role of a teacher or advisor/assistant."
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "system",
-                "content":system_prompt
-            },
-            {
-                "role":"user",
-                "content":input
-            }
-        ],
-        model=Model,
-        temperature=Temperature,
-        max_tokens=500
-    )
-    print(chat_completion.choices[0].message.content)
+    logging.info(f"User prompt: {input}")
+    for attempt in range(3):
+        try:
+            client = Groq(
+                api_key=API_key
+            )
+            system_prompt="You are an advanced study assistant that tutors and helps the user with different topics and tasks through assessing the given prompt and the additional information provided in the prompt.\n" \
+                        "read the prompt and given information carefully and follow the given tasks faithfully according to the given prompts.\n" \
+                        "if there is no information, then search the web and fulfill the given task.\n" \
+                        "Your response should be catered towards providing a positive response for the user as a caring and smart teacher or assistant.\n" \
+                        "respond in a soft yet firm manner befiting the role of a teacher or advisor/assistant."
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content":system_prompt
+                    },
+                    {
+                        "role":"user",
+                        "content":input
+                    }
+                ],
+                model=Model,
+                temperature=Temperature,
+                max_tokens=500
+            )
+            response = chat_completion.choices[0].message.content
+            tokens = chat_completion.usage.total_tokens
+            logging.info(f"Tokens used: {tokens}")
+            logging.info(f"LLM response: {response}")
+            print(response)
+            break
+        except Exception:
+            logging.warning("LLM request failed, retrying...")
 
 class Wiki:
     def Topic_Extraction(self):
         self.prom_wiki=prompt
-        print("yesW1")
         client = Groq(
             api_key=API_key
         )
@@ -56,20 +71,20 @@ class Wiki:
         self.extracted_output=(chat_completion.choices[0].message.content)
 
     def WIKI_call(self):
-        print("yesW2")
         topic=self.extracted_output.replace(" ","_")
-        address=f"https://en.wikipedia.org/api/rest_v1/page/summary{topic}"
+        logging.info(f"Calling Wikipedia API for topic: {topic}")
+        address=f"https://en.wikipedia.org/api/rest_v1/page/summary/{topic}"
         
         response=requests.get(url=address)
         if response.status_code == 200:
             data=response.json()
             self.add_info=data["extract"][:500]
         else:
+            logging.error("Wikipedia API request failed")
             self.add_info=["No additional information available"]
     
     def WIKI_Finish(self):
-        print("yesW3")
-        self.info=self.add_info[0]
+        self.info=self.add_info
         final_prompt=self.prom_wiki + str(self.info)
         return final_prompt
     
@@ -77,7 +92,6 @@ class Trivia:
     def Conditon_Extraction(self):
         self.prom_triv=prompt
         triv=self.prom_triv + '''"{id":9,"name":"General Knowledge"},{"id":10,"name":"Entertainment: Books"},{"id":11,"name":"Entertainment: Film"},{"id":12,"name":"Entertainment: Music"},{"id":13,"name":"Entertainment: Musicals & Theatres"},{"id":14,"name":"Entertainment: Television"},{"id":15,"name":"Entertainment: Video Games"},{"id":16,"name":"Entertainment: Board Games"},{"id":17,"name":"Science & Nature"},{"id":18,"name":"Science: Computers"},{"id":19,"name":"Science: Mathematics"},{"id":20,"name":"Mythology"},{"id":21,"name":"Sports"},{"id":22,"name":"Geography"},{"id":23,"name":"History"},{"id":24,"name":"Politics"},{"id":25,"name":"Art"},{"id":26,"name":"Celebrities"},{"id":27,"name":"Animals"},{"id":28,"name":"Vehicles"},{"id":29,"name":"Entertainment: Comics"},{"id":30,"name":"Science: Gadgets"},{"id":31,"name":"Entertainment: Japanese Anime & Manga"},{"id":32,"name":"Entertainment: Cartoon & Animations"}'''
-        print("yesT1")
         client = Groq(
             api_key=API_key
         )
@@ -107,31 +121,34 @@ class Trivia:
             temperature=Temperature
         )
         extracted_output=(chat_completion.choices[0].message.content)
-        data=json.loads(extracted_output)
+        try:
+            data=json.loads(extracted_output)
+        except Exception as e:
+            logging.error(f"Invalid JSON returned by LLM: {e}")
+            return
         self.no=data["number"]
         self.diff=data["difficulty"]
         self.cat_id=data["category_id"]
         print(self.no,self.diff,self.cat_id)
         
     def Triv_call(self):
-        print("yesT2")
+        logging.info(f"Calling Trivia API for topic: {self.prom_triv}")
         address=f"https://opentdb.com/api.php?amount={self.no}&category={self.cat_id}&difficulty={self.diff}"
         response=requests.get(url=address)
         if response.status_code == 200:
             data=response.json()
             self.add_info=data["results"]
         else:
+            logging.error("Trivia API request failed")
             self.add_info=["No additional information available"]
 
     def Triv_Finish(self):
-        print("yesT3")
-        final_prompt=self.prom_triv + str(self.add_info)
+        final_prompt=f"User Prompt:{self.prom_triv}\n Additional Information:{str(self.add_info)}"
         return final_prompt
     
 class Dict:
     def Def_Extraction(self):
         self.prom_def=prompt
-        print("yesD1")
         client = Groq(
             api_key=API_key
         )
@@ -155,8 +172,8 @@ class Dict:
         self.extracted_output=(chat_completion.choices[0].message.content)
 
     def Def(self):
-        print("yesD2")
         topic=self.extracted_output.replace(" ","_")
+        logging.info(f"Calling Dictionary API for topic: {topic}")
         address=f"https://api.dictionaryapi.dev/api/v2/entries/en/{topic}"
         
         response=requests.get(url=address)
@@ -164,10 +181,10 @@ class Dict:
             data=response.json()
             self.add_info=data[0]["meanings"]
         else:
+            logging.error("Dictionary API request failed")
             self.add_info=["No additional information available"]
 
     def Dict_finish(self):
-        print("yesD3")
         self.info=self.add_info
         final_prompt=self.prom_def + str(self.info)
         return final_prompt
