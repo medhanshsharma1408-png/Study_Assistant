@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from .routes import chat
+from .routes import chat,history
 
 logging.basicConfig(
     filename="assistant.log",
@@ -22,4 +22,5 @@ app.add_middleware(
 def health_check():
     return {"status": "healthy"}
 
-app.include_router(chat.router, prefix="/api", tags=["chat"])
+app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
+app.include_router(history.router, prefix="/api/v1", tags=["history"])
