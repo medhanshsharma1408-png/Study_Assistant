@@ -1,2 +1,5 @@
+fastapi
+uvicorn
 groq
 requests
+pydantic-settings
