@@ -5,13 +5,14 @@ from sqlalchemy.orm import Session
 from ..router import run
 from ..database import get_db
 from ..models.db import Session as ChatSession, Message
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 class ChatRequest(BaseModel):
     message: str
-    session_id: str | None = None
+    session_id: Optional[str] = None
 
     @field_validator("message")
     def message_must_be_valid(cls, v):
