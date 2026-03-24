@@ -14,9 +14,9 @@ export default function ChatWindow({ sessionId, onSessionCreated }) {
       return;
     }
     fetchHistory(sessionId)
-      .then((history) => {
+      .then((data) => {
         // Backend returns [{ role, content, intent, created_at }, ...]
-        setMessages(history);
+        setMessages(data.messages ?? []);
       })
       .catch(console.error);
   }, [sessionId]);
